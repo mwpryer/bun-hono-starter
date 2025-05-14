@@ -1,0 +1,35 @@
+steps:
+  # Build image
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA}", "."]
+
+  # Push image to Artifact Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA}"]
+
+  # Deploy image to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      [
+        "run",
+        "deploy",
+        "${_SERVICE_NAME}",
+        "--image",
+        "${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA}",
+        "--region",
+        "${_LOCATION}",
+        "--allow-unauthenticated",
+      ]
+
+images:
+  - "${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}"
+
+substitutions:
+  _REPOSITORY: bun-hono-repo
+  _IMAGE: bun-hono-image
+  _SERVICE_NAME: bun-hono
+  _LOCATION: europe-west2
+
+options:
+  logging: CLOUD_LOGGING_ONLY
